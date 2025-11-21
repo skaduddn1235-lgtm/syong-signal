@@ -1,116 +1,345 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>송숑 레버 신호기 v1.2 · Stooq</title>
-<style>
-body{margin:0;background:#0b0d12;color:#e7e9ef;font-family:Arial,sans-serif}
-section{margin:16px;padding:16px;background:#151924;border-radius:12px}
-h2{margin:0 0 12px 0;font-size:20px}
-table{width:100%;border-collapse:collapse;font-size:14px}
-td,th{padding:6px;border-bottom:1px solid #1e2430;text-align:center}
-.red{color:#ff6b6b}
-.green{color:#27d17f}
-.warn{color:#ffd166}
-.btn{padding:10px 14px;border-radius:8px;border:none;background:#1f6feb;color:white;margin-right:6px}
-</style></head><body>
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>숑숑 레버 신호기 v1.2 - Stooq(일봉)</title>
+  <style>
+    :root{
+      --bg:#0b0d12; --card:#151924; --card2:#101421;
+      --txt:#e7e9ef; --muted:#9aa3b2;
+      --good:#27d17f; --bad:#ff6b6b; --mid:#f2c94c; --line:#273044;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; background:var(--bg); color:var(--txt);
+      font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans KR",sans-serif;
+    }
+    .wrap{max-width:980px; margin:0 auto; padding:18px;}
+    h1{font-size:22px; margin:6px 0 8px}
+    .small{color:var(--muted); font-size:13px; line-height:1.4}
+    .card{
+      background:linear-gradient(180deg,var(--card),var(--card2));
+      border:1px solid #1f2637; border-radius:16px; padding:14px; margin:12px 0;
+      box-shadow:0 6px 18px rgba(0,0,0,.35);
+    }
+    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+    input,button,select{
+      background:#0e1220; color:var(--txt); border:1px solid #263149; border-radius:10px;
+      padding:9px 10px; font-size:14px;
+    }
+    button{cursor:pointer; font-weight:700}
+    button.primary{background:#1d6fff; border-color:#1d6fff}
+    button.ghost{background:transparent}
+    table{width:100%; border-collapse:collapse; font-size:14px; }
+    th,td{padding:9px 6px; border-bottom:1px solid var(--line); text-align:center; white-space:nowrap;}
+    th{color:#c7ceda; font-weight:700; font-size:12px;}
+    td.left, th.left{text-align:left}
+    .pill{
+      display:inline-flex; align-items:center; gap:6px;
+      padding:6px 10px; border-radius:999px; font-weight:800; font-size:13px;
+      border:1px solid #2a3550; background:#0f1424;
+    }
+    .good{color:var(--good); border-color:rgba(39,209,127,.4)}
+    .bad{color:var(--bad); border-color:rgba(255,107,107,.4)}
+    .mid{color:var(--mid); border-color:rgba(242,201,76,.4)}
+    .muted{color:var(--muted)}
+    .spark{height:44px; width:120px; background:#0b0f1b; border:1px solid #1e2740; border-radius:8px}
+    .err{color:var(--bad); font-weight:700}
+    .ok{color:var(--good); font-weight:700}
+    details summary{cursor:pointer; color:#cbd3e3; font-weight:700}
+    .foot{font-size:12px; color:var(--muted); margin-top:6px}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>숑숑 레버 신호기 v1.2 · Stooq(일봉)</h1>
+  <div class="small">
+    · Stooq 일봉 CSV를 씀. Stooq는 하루 1회 업데이트라 장중엔 전일 종가 기준.<br>
+    · GitHub Pages에서 Stooq 직호출은 CORS로 막혀서, 공개 프록시(AllOrigins)로 우회함.
+  </div>
 
-<section>
-<h2>송숑 레버 신호기 v1.2 · Stooq (일봉)</h2>
-<p class="warn">※ Stooq 데이터는 1일 1회 업데이트, 시세는 "종가" 기준.</p>
-</section>
+  <div class="card">
+    <div class="row">
+      <label class="small">대상 티커</label>
+      <input id="tickers" style="flex:1; min-width:220px"
+             value="TQQQ,SOXL,QLD,NVDL,METU,TSLL"/>
+      <select id="market">
+        <option value="us">미국(.us)</option>
+        <option value="kr">한국(.kr)</option>
+      </select>
+      <button class="primary" id="runBtn">전체 업데이트</button>
+      <button class="ghost" id="resetBtn">리셋</button>
+    </div>
+    <div class="foot">예: TQQQ는 Stooq 코드상 TQQQ.US 로 조회됨. (한국이면 005930.KR 같은 식)</div>
+  </div>
 
-<section>
-<h2>1. 레버 종목 신호</h2>
-<table id="tbl">
-<thead><tr>
-<th>티커</th><th>현재가</th><th>MA5</th><th>MA20</th><th>MA60</th><th>MA120</th><th>RSI14</th><th>추세</th><th>신호</th></tr></thead>
-<tbody></tbody>
-</table>
-</section>
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <div class="row">
+        <div class="pill" id="trendPill">추세: 계산전</div>
+        <div class="pill" id="rsiPill">과열/과매도: 계산전</div>
+      </div>
+      <div class="pill" id="actionPill">오늘 액션: 계산전</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th class="left">티커</th>
+          <th>현재가(종가)</th>
+          <th>MA5</th><th>MA20</th><th>MA60</th><th>MA120</th><th>MA200</th>
+          <th>RSI14</th>
+          <th>미니차트</th>
+          <th class="left">신호</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <details>
+      <summary>왜 실패떴는지 / 이 버전 구조</summary>
+      <div class="small" style="margin-top:8px; line-height:1.6">
+        - Stooq CSV는 CORS 헤더가 없어 브라우저에서 직접 fetch하면 무조건 실패함.<br>
+        - AllOrigins(공개 CORS 프록시)로 가져오면 브라우저가 허용해서 데이터가 들어옴.<br>
+        - 프록시가 죽거나 느리면 또 실패할 수 있음 → 그땐 다른 프록시로 URL만 바꾸면 됨.<br>
+      </div>
+    </details>
+  </div>
+</div>
 
 <script>
-const tickers=["TQQQ","SOXL","QLD","NVDL","METU","TSLL"];
-const proxy = "https://thingproxy.freeboard.io/fetch/";
-const url=t=>proxy+encodeURIComponent(`https://stooq.com/q/d/l/?s=${t.toLowerCase()}.us&i=d`);
+const $ = (s)=>document.querySelector(s);
+const tbody = $("#tbody");
 
-async function loadCSV(t){
-  try{
-    const r=await fetch(url(t));
-    if(!r.ok) throw new Error("fetch fail");
-    const tx=await r.text();
-    return parseCSV(tx);
-  }catch(e){return null;}
+const PROXIES = [
+  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  url => `https://r.jina.ai/http://${url.replace(/^https?:\/\//,'')}`, // 예비
+];
+
+function stooqUrl(ticker, market){
+  const t = ticker.trim().toLowerCase();
+  const suffix = market === "kr" ? ".kr" : ".us";
+  return `https://stooq.com/q/d/l/?s=${t}${suffix}&i=d`;
 }
 
-function parseCSV(s){
-  const L=s.trim().split("\n").slice(1).map(l=>{
-    const[x,o,h,lo,c]=l.split(",");
-    return {date:x,close:+c};
-  });
-  return L.filter(v=>!isNaN(v.close));
-}
-
-function SMA(arr,n){
-  if(arr.length<n) return null;
-  let s=0;
-  for(let i=arr.length-n;i<arr.length;i++) s+=arr[i].close;
-  return (s/n).toFixed(2);
-}
-
-function RSI(data,period=14){
-  if(data.length<period+1) return null;
-  let gains=0,loss=0;
-  for(let i=data.length-period;i<data.length;i++){
-    const diff=data[i].close-data[i-1].close;
-    if(diff>0) gains+=diff; else loss-=diff;
+async function fetchCsv(url){
+  let lastErr;
+  for(const proxy of PROXIES){
+    try{
+      const r = await fetch(proxy(url), {cache:"no-store"});
+      if(!r.ok) throw new Error(`http_${r.status}`);
+      return await r.text();
+    }catch(e){ lastErr = e; }
   }
-  const rs=gains/(loss||1);
-  return (100-(100/(1+rs))).toFixed(1);
+  throw lastErr || new Error("fetch_failed");
 }
 
-function trend(ma5,ma20,ma60){
-  if(!ma5||!ma20||!ma60) return "-";
-  if(ma5>ma20&&ma20>ma60) return "상승";
-  if(ma5<ma20&&ma20<ma60) return "하락";
-  return "혼조";
+function parseCsv(text){
+  const lines = text.trim().split(/\r?\n/);
+  if(lines.length < 5) return null;
+  const head = lines[0].split(",");
+  const idx = {
+    date: head.indexOf("Date"),
+    open: head.indexOf("Open"),
+    high: head.indexOf("High"),
+    low:  head.indexOf("Low"),
+    close: head.indexOf("Close"),
+    vol:  head.indexOf("Volume"),
+  };
+  const rows = [];
+  for(let i=1;i<lines.length;i++){
+    const p = lines[i].split(",");
+    const close = parseFloat(p[idx.close]);
+    if(!isFinite(close)) continue;
+    rows.push({
+      date:p[idx.date],
+      open:parseFloat(p[idx.open]),
+      high:parseFloat(p[idx.high]),
+      low:parseFloat(p[idx.low]),
+      close,
+      vol:parseFloat(p[idx.vol]),
+    });
+  }
+  return rows;
 }
 
-function signal(tr,rsi){
-  if(!tr||!rsi) return "-";
-  if(rsi>70) return "과열 · 매도주의";
-  if(rsi<30) return "과매도 · 소액 DCA";
-  if(tr==="상승") return "추세매수";
-  if(tr==="하락") return "관망/현금";
-  return "유지";
+function SMA(arr, n){
+  if(arr.length < n) return null;
+  let s=0;
+  for(let i=arr.length-n;i<arr.length;i++) s += arr[i];
+  return s/n;
+}
+
+function RSI(closes, period=14){
+  if(closes.length < period+1) return null;
+  let gains=0, losses=0;
+  for(let i=closes.length-period;i<closes.length;i++){
+    const diff = closes[i]-closes[i-1];
+    if(diff>=0) gains += diff;
+    else losses += -diff;
+  }
+  const avgGain = gains/period;
+  const avgLoss = losses/period;
+  if(avgLoss===0) return 100;
+  const rs = avgGain/avgLoss;
+  return 100 - (100/(1+rs));
+}
+
+function drawSpark(canvas, closes){
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width = canvas.clientWidth;
+  const h = canvas.height = canvas.clientHeight;
+  ctx.clearRect(0,0,w,h);
+  if(closes.length<2) return;
+
+  const min = Math.min(...closes);
+  const max = Math.max(...closes);
+  const pad = 3;
+  const scaleX = (w-2*pad)/(closes.length-1);
+  const scaleY = (h-2*pad)/(max-min || 1);
+
+  ctx.beginPath();
+  closes.forEach((c,i)=>{
+    const x = pad + i*scaleX;
+    const y = h-pad - (c-min)*scaleY;
+    if(i===0) ctx.moveTo(x,y);
+    else ctx.lineTo(x,y);
+  });
+  ctx.lineWidth = 1.6;
+  ctx.strokeStyle = "#7aa2ff";
+  ctx.stroke();
+}
+
+function signalFrom(ma20, ma60, rsi){
+  // 너가 원한 “3단 신호” 감각 유지
+  if(ma20 && ma60 && ma20 > ma60 && rsi && rsi < 70) return {txt:"추세 강함 · 유지/분할매수", cls:"good"};
+  if(rsi && rsi >= 70) return {txt:"과열 · 비중조절/익절 우선", cls:"bad"};
+  if(rsi && rsi <= 30) return {txt:"과매도 · 소액 DCA 가능", cls:"good"};
+  return {txt:"중립 · 관망/유지", cls:"mid"};
 }
 
 async function run(){
-  const tb=document.querySelector("#tbl tbody");
-  tb.innerHTML="";
-  for(const t of tickers){
-    const d=await loadCSV(t);
-    if(!d){
-      tb.innerHTML+=`<tr><td>${t}</td><td colspan="8" class="red">데이터 실패</td></tr>`;
-      continue;
-    }
-    const c=d[d.length-1].close.toFixed(2);
-    const ma5=SMA(d,5), ma20=SMA(d,20), ma60=SMA(d,60), ma120=SMA(d,120);
-    const r=RSI(d,14);
-    const tr=trend(ma5,ma20,ma60);
-    const sg=signal(tr,r);
+  tbody.innerHTML = "";
+  $("#trendPill").textContent = "추세: 계산중";
+  $("#rsiPill").textContent = "과열/과매도: 계산중";
+  $("#actionPill").textContent = "오늘 액션: 계산중";
+  $("#trendPill").className = "pill";
+  $("#rsiPill").className = "pill";
+  $("#actionPill").className = "pill";
 
-    tb.innerHTML+=`
-    <tr>
-      <td>${t}</td>
-      <td>${c}</td>
-      <td>${ma5??"-"}</td>
-      <td>${ma20??"-"}</td>
-      <td>${ma60??"-"}</td>
-      <td>${ma120??"-"}</td>
-      <td>${r??"-"}</td>
-      <td>${tr}</td>
-      <td>${sg}</td>
-    </tr>`;
+  const market = $("#market").value;
+  const tickers = $("#tickers").value.split(",").map(v=>v.trim()).filter(Boolean);
+
+  let upCount=0, downCount=0, rsiHot=0, rsiCold=0;
+
+  for(const tk of tickers){
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="left"><b>${tk}</b></td>
+      <td class="muted">...</td>
+      <td class="muted">-</td><td class="muted">-</td><td class="muted">-</td><td class="muted">-</td><td class="muted">-</td>
+      <td class="muted">-</td>
+      <td><canvas class="spark"></canvas></td>
+      <td class="left muted">로딩중...</td>
+    `;
+    tbody.appendChild(tr);
+
+    try{
+      const url = stooqUrl(tk, market);
+      const csv = await fetchCsv(url);
+      const rows = parseCsv(csv);
+      if(!rows || rows.length < 210) throw new Error("not_enough_data");
+
+      const closes = rows.map(r=>r.close);
+      const last = closes[closes.length-1];
+
+      const ma5   = SMA(closes,5);
+      const ma20  = SMA(closes,20);
+      const ma60  = SMA(closes,60);
+      const ma120 = SMA(closes,120);
+      const ma200 = SMA(closes,200);
+      const rsi14 = RSI(closes,14);
+
+      // 추세 카운트
+      if(ma20 && ma60){
+        if(ma20>ma60) upCount++;
+        else downCount++;
+      }
+      if(rsi14){
+        if(rsi14>=70) rsiHot++;
+        if(rsi14<=30) rsiCold++;
+      }
+
+      const sig = signalFrom(ma20, ma60, rsi14);
+
+      const tds = tr.querySelectorAll("td");
+      tds[1].innerHTML = `<span class="ok">${last.toFixed(2)}</span>`;
+      tds[2].textContent = ma5?.toFixed(2) ?? "-";
+      tds[3].textContent = ma20?.toFixed(2) ?? "-";
+      tds[4].textContent = ma60?.toFixed(2) ?? "-";
+      tds[5].textContent = ma120?.toFixed(2) ?? "-";
+      tds[6].textContent = ma200?.toFixed(2) ?? "-";
+      tds[7].textContent = rsi14?.toFixed(1) ?? "-";
+      tds[9].innerHTML = `<span class="${sig.cls}"><b>${sig.txt}</b></span>`;
+
+      // 미니 차트: 최근 60봉
+      const c = tr.querySelector("canvas");
+      drawSpark(c, closes.slice(-60));
+
+    }catch(e){
+      const tds = tr.querySelectorAll("td");
+      tds[1].innerHTML = `<span class="err">데이터 실패</span>`;
+      tds[9].innerHTML = `<span class="err">Failed to fetch / CORS</span>`;
+    }
   }
+
+  // 상단 요약
+  const trendSummary =
+    upCount>= (tickers.length*0.6) ? "호조/상승" :
+    downCount>= (tickers.length*0.6) ? "약세/하락" : "호조/전환/중립";
+
+  const rsiSummary =
+    rsiHot>=3 ? "과열" :
+    rsiCold>=3 ? "과매도" : "중립";
+
+  const actionSummary =
+    rsiHot>=3 ? "비중조절/익절 우선" :
+    rsiCold>=3 ? "소액 DCA 가능" :
+    trendSummary.includes("호조") ? "유지/분할매수" :
+    trendSummary.includes("약세") ? "유지/관망" : "관망";
+
+  $("#trendPill").textContent = `추세: ${trendSummary}`;
+  $("#trendPill").classList.add(
+    trendSummary.includes("호조") ? "good" :
+    trendSummary.includes("약세") ? "bad" : "mid"
+  );
+
+  $("#rsiPill").textContent = `과열/과매도: ${rsiSummary}`;
+  $("#rsiPill").classList.add(
+    rsiSummary==="과열" ? "bad" :
+    rsiSummary==="과매도" ? "good" : "mid"
+  );
+
+  $("#actionPill").textContent = `오늘 액션: ${actionSummary}`;
+  $("#actionPill").classList.add(
+    actionSummary.includes("익절") ? "bad" :
+    actionSummary.includes("DCA") || actionSummary.includes("분할매수") ? "good" : "mid"
+  );
 }
+
+$("#runBtn").addEventListener("click", run);
+$("#resetBtn").addEventListener("click", ()=>{
+  $("#tickers").value="TQQQ,SOXL,QLD,NVDL,METU,TSLL";
+  $("#market").value="us";
+  run();
+});
+
 run();
 </script>
-
-</body></html>
+</body>
+</html>
