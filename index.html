@@ -2,20 +2,14 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-  <title>송송 레버 신호기 v1.1 (Finnhub FIX)</title>
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>숑숑 레버 신호기 v1.2 (Stooq Daily)</title>
   <style>
     :root{
-      --bg:#0b0d12;
-      --card:#151924;
-      --card2:#101421;
-      --txt:#e7e9ef;
-      --muted:#9aa3b2;
-      --good:#27d17f;
-      --bad:#ff6b6b;
-      --warn:#ffd166;
-      --accent:#7aa2ff;
-      --radius:16px;
+      --bg:#0b0d12; --card:#151924; --card2:#101421;
+      --txt:#e7e9ef; --muted:#9aa3b2; --good:#27d17f; --bad:#ff6b6b;
+      --warn:#ffd166; --accent:#7aa2ff; --radius:16px;
     }
     *{box-sizing:border-box}
     body{
@@ -24,135 +18,162 @@
     }
     header{
       position:sticky; top:0; z-index:10;
-      background:linear-gradient(180deg,#0b0d12 0%, rgba(11,13,18,.92) 100%);
+      background:linear-gradient(180deg,#0b0d12 0%,rgba(11,13,18,.9) 100%);
       padding:14px 14px 8px; border-bottom:1px solid rgba(255,255,255,.06);
+      backdrop-filter:blur(6px);
     }
-    h1{font-size:18px; margin:0 0 6px; font-weight:800}
-    .sub{font-size:12px; color:var(--muted)}
-    main{padding:14px; display:grid; gap:12px; grid-template-columns:1fr}
+    h1{
+      margin:0; font-size:20px; letter-spacing:-.3px; font-weight:800;
+      display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+    }
+    h1 small{font-size:12px;color:var(--muted);font-weight:600}
+    main{padding:12px; display:grid; gap:12px; grid-template-columns:1fr}
+    .grid2{display:grid; gap:12px; grid-template-columns:1fr 1fr}
     .card{
       background:var(--card); border:1px solid rgba(255,255,255,.06);
-      border-radius:var(--radius); padding:14px;
-      box-shadow:0 8px 24px rgba(0,0,0,.3);
+      border-radius:var(--radius); padding:14px; box-shadow:0 8px 30px rgba(0,0,0,.25);
     }
-    .card h2{font-size:16px; margin:0 0 10px}
-    .row{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
-    input{
-      width:100%; padding:12px 12px; border-radius:12px;
-      border:1px solid rgba(255,255,255,.1); background:var(--card2); color:var(--txt);
-      outline:none; font-size:14px;
+    .card h2{
+      margin:0 0 10px; font-size:15px; font-weight:800; color:#dfe5f3;
+    }
+    .note{
+      font-size:12px; color:var(--muted); line-height:1.5;
+      background:var(--card2); border:1px dashed rgba(255,255,255,.12);
+      padding:10px; border-radius:12px; margin-top:8px;
+    }
+    .row{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+    input[type="text"], input[type="number"]{
+      width:100%; background:#0e111a; color:var(--txt);
+      border:1px solid rgba(255,255,255,.08);
+      padding:10px 12px; border-radius:12px; outline:none; font-size:14px;
     }
     .btn{
-      padding:12px 14px; border-radius:12px; border:0; cursor:pointer;
-      font-weight:800; font-size:14px;
-      background:#1c2437; color:var(--txt);
-      border:1px solid rgba(255,255,255,.08);
+      background:#1a2030; color:var(--txt); border:1px solid rgba(255,255,255,.08);
+      padding:10px 12px; border-radius:12px; font-weight:700; font-size:14px;
     }
-    .btn.primary{background:var(--accent); color:#0b0d12}
-    .btn:disabled{opacity:.6; cursor:not-allowed}
+    .btn.primary{background:var(--accent); color:#0b0d12; border:none}
     .pill{
-      padding:8px 10px; border-radius:999px; font-size:13px; font-weight:800;
-      border:1px solid rgba(255,255,255,.10); background:var(--card2);
-      display:inline-flex; align-items:center; gap:6px;
+      display:inline-flex; align-items:center; gap:6px; padding:8px 10px;
+      border-radius:999px; font-size:13px; font-weight:800;
+      border:1px solid rgba(255,255,255,.1); background:rgba(255,255,255,.03);
+      color:#dfe5f3;
     }
-    .pill.good{color:var(--good); border-color:rgba(39,209,127,.35)}
-    .pill.bad{color:var(--bad); border-color:rgba(255,107,107,.35)}
-    .pill.warn{color:var(--warn); border-color:rgba(255,209,102,.35)}
-    .pill.muted{color:var(--muted)}
-    details{margin-top:8px}
-    details summary{cursor:pointer; color:var(--muted); font-size:13px}
-    table{width:100%; border-collapse:collapse; font-size:13px}
-    th,td{padding:8px 6px; border-bottom:1px dashed rgba(255,255,255,.08); text-align:center}
+    .pill.good{border-color:rgba(39,209,127,.5); color:var(--good); background:rgba(39,209,127,.07)}
+    .pill.bad{border-color:rgba(255,107,107,.5); color:var(--bad); background:rgba(255,107,107,.07)}
+    .pill.warn{border-color:rgba(255,209,102,.6); color:var(--warn); background:rgba(255,209,102,.08)}
+    .muted{color:var(--muted)}
+    table{width:100%; border-collapse:separate; border-spacing:0 6px; font-size:13px}
+    th,td{padding:8px 8px; text-align:center}
     th{color:var(--muted); font-weight:700}
-    td.left, th.left{text-align:left}
-    .err{color:var(--bad); font-weight:700}
-    .ok{color:var(--good); font-weight:700}
-    .small{font-size:12px; color:var(--muted)}
-    .hr{height:1px; background:rgba(255,255,255,.06); margin:10px 0}
-    canvas{width:100%; height:120px; background:#0d111a; border-radius:12px; border:1px solid rgba(255,255,255,.06)}
+    tr.data{
+      background:var(--card2); border-radius:12px;
+    }
+    tr.data td:first-child{border-top-left-radius:10px;border-bottom-left-radius:10px}
+    tr.data td:last-child{border-top-right-radius:10px;border-bottom-right-radius:10px}
+    .left{text-align:left}
+    .right{text-align:right}
+    .err{color:var(--bad); font-weight:800}
+    .ok{color:var(--good); font-weight:800}
+    canvas{
+      width:100%; height:160px; background:#0e111a;
+      border:1px solid rgba(255,255,255,.08); border-radius:12px;
+    }
+    .footer{font-size:12px;color:var(--muted); line-height:1.5}
+    .tiny{font-size:11px}
+    .divider{height:1px;background:rgba(255,255,255,.06);margin:8px 0}
+    .toast{
+      position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
+      background:#111624; border:1px solid rgba(255,255,255,.12);
+      padding:10px 12px; border-radius:12px; font-size:13px; font-weight:800;
+      opacity:0; pointer-events:none; transition:.25s; box-shadow:0 6px 24px rgba(0,0,0,.35);
+    }
+    .toast.show{opacity:1; transform:translateX(-50%) translateY(-6px)}
   </style>
 </head>
 <body>
 <header>
-  <h1>송송 레버 신호기 v1.1 <span class="small">· 일봉 기준 · Finnhub FIX</span></h1>
-  <div class="sub">신호는 100% 정답이 아님. “실수 줄이는 장치”로만 쓰자.</div>
+  <h1>
+    숑숑 레버 신호기 v1.2
+    <small>일봉 기준 · Stooq Daily (키 없음)</small>
+  </h1>
+  <div class="note">
+    ⚠️ 주식은 확률게임이라 100% 정답 신호는 없음. 신호는 “실수 줄이는 장치”로만 쓰고, 최종 판단은 네가 해.
+  </div>
 </header>
 
 <main>
-  <section class="card">
-    <h2>1. API / 환경</h2>
-    <div class="row">
-      <div style="flex:1; min-width:220px">
-        <div class="small">Finnhub API Key</div>
-        <input id="apiKey" placeholder="여기에 Finnhub 키 입력" autocomplete="off"/>
+  <section class="grid2">
+    <div class="card">
+      <h2>1. 환경</h2>
+      <div class="row">
+        <div style="flex:1">
+          <div class="tiny muted">달러/원 환율 (표시용)</div>
+          <input id="fxInput" type="number" min="0" step="0.01" placeholder="예: 1470"/>
+        </div>
       </div>
-      <div style="width:150px">
-        <div class="small">달러/원 환율(수동)</div>
-        <input id="fxRate" type="number" step="0.01" value="1470"/>
+      <div class="row" style="margin-top:8px">
+        <button class="btn" id="saveBtn">저장</button>
+        <button class="btn primary" id="updateAllBtn">전체 업데이트</button>
       </div>
-    </div>
-    <div class="row" style="margin-top:10px">
-      <button class="btn" id="saveBtn">저장</button>
-      <button class="btn primary" id="updateBtn">전체 업데이트</button>
-      <span id="status" class="small"></span>
+      <div class="note tiny">
+        Stooq 일봉을 쓰므로 API Key 입력은 필요 없음.
+      </div>
     </div>
 
-    <details>
-      <summary>⚠️ 403/캔들실패가 뜨는 이유</summary>
-      <div class="small" style="margin-top:6px; line-height:1.5">
-        - Finnhub 무료 플랜은 캔들/히스토리 요청 제한이 빡셈. 초과하면 403이 남.<br/>
-        - 토큰이 맞아도 “You don't have access to this resource”가 나오면 플랜/요청제한 문제임.<br/>
-        - 깃허브 페이지 같은 정적 호스팅은 CORS 때문에 일부 API가 막히기도 함.<br/>
-        - 해결: (1) 잠깐 쉬고 재시도 (2) Finnhub 플랜 업글 (3) 중계 서버(프록시) 쓰기.
+    <div class="card">
+      <h2>2. 레버리지 규칙(네 포폴 맞춤)</h2>
+      <div class="tiny muted" style="line-height:1.6">
+        - 레버는 비중 조절이 핵심이라 “3단 신호”로 단순화.<br/>
+        - 기본 목표: 레버 총합이 40% 넘으면 신규매수 최소화, 25% 밑이면 분할매수 허용.<br/>
+        - 개별 종목은 추세(MA) + 과열(RSI)로 판단.
       </div>
-    </details>
-  </section>
-
-  <section class="card">
-    <h2>2. 레버리지 규칙(네 포폴 맞춤)</h2>
-    <div class="small" style="line-height:1.6">
-      - 레버는 비중 조절이 핵심이라 “3단 신호”로 단순화.<br/>
-      - 기본 목표: 레버 총합이 40% 넘으면 신규매수 최소화, 25% 밑이면 분할매수 허용.<br/>
-      - 개별 종목은 추세(MA) + 과열(RSI)로 판단.
-    </div>
-    <div class="row" style="margin-top:10px">
-      <span class="pill muted" id="trendPill">추세: 계산중</span>
-      <span class="pill muted" id="rsiPill">과열/과매도: 계산중</span>
-      <span class="pill muted" id="actionPill">오늘 액션: 계산중</span>
+      <div class="divider"></div>
+      <div class="row">
+        <span class="pill" id="trendPill">추세: 계산중</span>
+        <span class="pill" id="rsiPill">과열/과매도: 계산중</span>
+        <span class="pill" id="actionPill">오늘 액션: 계산중</span>
+      </div>
     </div>
   </section>
 
   <section class="card">
     <h2>3. 레버 종목 신호</h2>
-    <div class="small">대상: TQQQ, SOXL, QLD, NVDL, METU, TSLL</div>
-    <div class="hr"></div>
+    <div class="tiny muted">대상: TQQQ, SOXL, QLD, NVDL, METU, TSLL</div>
 
-    <div class="row" style="gap:10px">
-      <div style="flex:1; min-width:250px">
-        <canvas id="miniChart"></canvas>
-        <div class="small" id="chartLabel" style="margin-top:6px">최근 6개월 종합 캔들(정규화)</div>
-      </div>
+    <div style="margin-top:10px">
+      <div class="tiny muted" style="margin-bottom:6px">최근 6개월 종합 라인(정규화 close)</div>
+      <canvas id="comboCanvas" width="900" height="320"></canvas>
     </div>
 
-    <div style="overflow:auto; margin-top:12px">
-      <table>
+    <div style="margin-top:10px; overflow:auto">
+      <table id="sigTable">
         <thead>
         <tr>
           <th class="left">티커</th>
           <th>현재가(USD)</th>
-          <th>MA5</th><th>MA20</th><th>MA60</th><th>MA120</th><th>MA200</th>
+          <th>MA5</th>
+          <th>MA20</th>
+          <th>MA60</th>
+          <th>MA120</th>
+          <th>MA200</th>
           <th>RSI14</th>
-          <th>추세</th><th>신호</th><th>추천비중</th>
+          <th>추세</th>
+          <th>신호</th>
+          <th>추천 비중</th>
         </tr>
         </thead>
-        <tbody id="tbody"></tbody>
+        <tbody></tbody>
       </table>
+    </div>
+
+    <div class="note tiny">
+      ※ 데이터는 Stooq 일봉 CSV 기반. 장중에는 Stooq 업데이트가 늦을 수 있음(보통 하루 1회).
     </div>
   </section>
 
   <section class="card">
     <h2>4. 체크리스트(일봉 기준)</h2>
-    <ul class="small" style="line-height:1.7; margin:0; padding-left:18px">
+    <ul class="tiny muted" style="line-height:1.7">
       <li>가격이 MA60 위/아래? → 큰 추세</li>
       <li>MA5 vs MA20 위치? → 단기 힘</li>
       <li>MA20 vs MA60 골든/데드? → 중기 전환</li>
@@ -160,289 +181,300 @@
     </ul>
   </section>
 
-  <section class="card">
-    <h2>5. 로그(메모용)</h2>
-    <textarea id="memo" style="width:100%; height:120px; background:var(--card2); color:var(--txt); border:1px solid rgba(255,255,255,.1); border-radius:12px; padding:10px"></textarea>
-    <div class="small" style="margin-top:6px">오늘 느낀 점/매수·매도 이유 적어두기.</div>
+  <section class="card footer">
+    <div>문의/메모는 네가 쓰기 편한 방식으로 따로 기록해두자.</div>
   </section>
 </main>
 
+<div class="toast" id="toast"></div>
+
 <script>
-  const TICKERS = ["TQQQ","SOXL","QLD","NVDL","METU","TSLL"];
-  const $ = (s)=>document.querySelector(s);
-  const tbody = $("#tbody");
-  const statusEl = $("#status");
-  const trendPill = $("#trendPill");
-  const rsiPill = $("#rsiPill");
-  const actionPill = $("#actionPill");
-  const miniChart = $("#miniChart");
-  const apiKeyInput = $("#apiKey");
-  const fxRateInput = $("#fxRate");
-  const memoInput = $("#memo");
+/** ===== 설정 ===== */
+const TICKERS = ["TQQQ","SOXL","QLD","NVDL","METU","TSLL"];
+const STOOQ_SUFFIX = ".us"; // 미국 ETF 기준
+const LOOKBACK_DAYS = 260; // 대략 1년치(일봉 260영업일)
 
-  // ---------- localStorage ----------
-  const LS_KEY = "syong_signal_v11";
-  function loadSaved(){
-    try{
-      const saved = JSON.parse(localStorage.getItem(LS_KEY)||"{}");
-      if(saved.apiKey) apiKeyInput.value = saved.apiKey;
-      if(saved.fxRate) fxRateInput.value = saved.fxRate;
-      if(saved.memo) memoInput.value = saved.memo;
-    }catch(e){}
-  }
-  function saveAll(){
-    const data = {
-      apiKey: apiKeyInput.value.trim(),
-      fxRate: Number(fxRateInput.value)||1470,
-      memo: memoInput.value||""
-    };
-    localStorage.setItem(LS_KEY, JSON.stringify(data));
-    toast("저장됨");
-  }
+/** ===== 유틸 ===== */
+const $ = (sel)=>document.querySelector(sel);
+const fmt = (v, d=2)=> (v==null || Number.isNaN(v)) ? "-" : Number(v).toFixed(d);
+const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
 
-  $("#saveBtn").addEventListener("click", saveAll);
-  memoInput.addEventListener("input", ()=> {
-    const saved = JSON.parse(localStorage.getItem(LS_KEY)||"{}");
-    saved.memo = memoInput.value;
-    localStorage.setItem(LS_KEY, JSON.stringify(saved));
-  });
+function toast(msg){
+  const t=$("#toast");
+  t.textContent=msg;
+  t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),1200);
+}
 
-  // ---------- utils ----------
-  function toast(msg){
-    statusEl.textContent = msg;
-    setTimeout(()=>statusEl.textContent="", 2500);
-  }
-  function fmt(n, d=2){
-    if(n==null || isNaN(n)) return "-";
-    return Number(n).toFixed(d);
-  }
+function saveFx(){
+  const fx = Number($("#fxInput").value||0);
+  localStorage.setItem("syong_fx", String(fx));
+  toast("저장");
+}
+function loadFx(){
+  const fx = localStorage.getItem("syong_fx");
+  if(fx) $("#fxInput").value = fx;
+}
 
-  function sma(values, period){
-    if(values.length < period) return null;
-    let s=0;
-    for(let i=values.length-period;i<values.length;i++) s+=values[i];
-    return s/period;
+/** CSV 파서 (간단) */
+function parseCSV(text){
+  const lines = text.trim().split(/\r?\n/);
+  const header = lines[0].split(",");
+  const rows = [];
+  for(let i=1;i<lines.length;i++){
+    const cols = lines[i].split(",");
+    if(cols.length<5) continue;
+    const obj = {};
+    header.forEach((h,idx)=>obj[h]=cols[idx]);
+    rows.push(obj);
   }
+  return rows;
+}
 
-  function calcRSI(closes, period=14){
-    if(closes.length<period+1) return null;
-    let gains=0, losses=0;
-    for(let i=closes.length-period;i<closes.length;i++){
-      const diff = closes[i]-closes[i-1];
-      if(diff>=0) gains += diff;
-      else losses += -diff;
-    }
-    const avgGain = gains/period;
-    const avgLoss = losses/period;
-    if(avgLoss===0) return 100;
-    const rs = avgGain/avgLoss;
-    return 100 - (100/(1+rs));
+/** Stooq 일봉 가져오기 */
+async function fetchDailyOHLC(ticker){
+  const s = (ticker.toLowerCase() + STOOQ_SUFFIX);
+  const url = `https://stooq.com/q/d/l/?s=${encodeURIComponent(s)}&i=d`;
+  const res = await fetch(url, {cache:"no-store"});
+  if(!res.ok) throw new Error("stooq_http_"+res.status);
+  const txt = await res.text();
+  const rows = parseCSV(txt);
+
+  // Date 오름차순으로 와서 그대로 씀
+  const data = rows.map(r=>({
+    date: r.Date,
+    open: Number(r.Open),
+    high: Number(r.High),
+    low: Number(r.Low),
+    close: Number(r.Close),
+    volume: Number(r.Volume)
+  })).filter(d=>Number.isFinite(d.close));
+
+  if(data.length<50) throw new Error("stooq_not_enough_data");
+  return data.slice(-LOOKBACK_DAYS);
+}
+
+/** 이동평균 */
+function SMA(values, period){
+  if(values.length<period) return null;
+  let sum=0;
+  for(let i=values.length-period;i<values.length;i++) sum+=values[i];
+  return sum/period;
+}
+
+/** RSI 14 (Wilder) */
+function RSI(values, period=14){
+  if(values.length<=period) return null;
+  let gains=0, losses=0;
+  for(let i=1;i<=period;i++){
+    const diff=values[i]-values[i-1];
+    if(diff>=0) gains+=diff; else losses-=diff;
   }
-
-  // 간단 추세/신호 룰
-  function trendSignal(price, ma5, ma20, ma60, ma120, ma200){
-    if([ma60,ma120,ma200].some(v=>v==null)) return {trend:"계산중", score:0};
-    let score=0;
-    if(price>ma60) score++;
-    if(price>ma120) score++;
-    if(price>ma200) score++;
-    if(ma5!=null && ma20!=null){
-      if(ma5>ma20) score++;
-      else score--;
-    }
-    let trend="중립";
-    if(score>=3) trend="호조/상승";
-    else if(score<=0) trend="약세/하락";
-    return {trend, score};
+  let avgGain=gains/period;
+  let avgLoss=losses/period;
+  for(let i=period+1;i<values.length;i++){
+    const diff=values[i]-values[i-1];
+    const gain=diff>0?diff:0;
+    const loss=diff<0?-diff:0;
+    avgGain=(avgGain*(period-1)+gain)/period;
+    avgLoss=(avgLoss*(period-1)+loss)/period;
   }
+  if(avgLoss===0) return 100;
+  const rs=avgGain/avgLoss;
+  return 100-(100/(1+rs));
+}
 
-  function rsiSignal(rsi){
-    if(rsi==null) return {state:"계산중", tag:"muted"};
-    if(rsi>=70) return {state:"과열", tag:"warn"};
-    if(rsi<=30) return {state:"과매도", tag:"good"};
-    return {state:"중립", tag:"muted"};
-  }
+/** 추세/신호 로직 */
+function judgeSignal(close, ma20, ma60, rsi){
+  // 추세
+  let trend = "중립";
+  if(ma60 && close>ma60) trend="상승";
+  if(ma60 && close<ma60) trend="하락";
 
-  function actionFrom(trend, rsiState){
-    if(trend.includes("호조") && rsiState==="과열") return "비중조절/익절 우선";
-    if(trend.includes("호조") && rsiState!=="과열") return "유지/소액 DCA";
-    if(trend.includes("약세") && rsiState==="과매도") return "분할매수 고려";
-    if(trend.includes("약세")) return "관망/비중축소";
-    if(rsiState==="과매도") return "소액 DCA 가능";
-    return "유지/관망";
-  }
-
-  function weightGuide(trend, rsiState){
-    if(trend.includes("호조") && rsiState!=="과열") return "↑";
-    if(trend.includes("약세") && rsiState!=="과매도") return "↓";
-    return "↔";
-  }
-
-  // ---------- Finnhub fetch ----------
-  async function fetchCandles(symbol, token){
-    const now = Math.floor(Date.now()/1000);
-    const from = now - 3600*24*365; // 1년
-    const url = `https://finnhub.io/api/v1/stock/candle?symbol=${symbol}&resolution=D&from=${from}&to=${now}&token=${token}`;
-    const res = await fetch(url, {cache:"no-store"});
-    if(!res.ok){
-      let text="";
-      try{text = await res.text();}catch(e){}
-      throw new Error(`HTTP_${res.status}: ${text.slice(0,80)}`);
-    }
-    const data = await res.json();
-    if(data.s!=="ok") throw new Error(data.s || "candle_fail");
-    return data; // {c,h,l,o,t,v}
+  // 과열/과매도
+  let heat="중립";
+  if(rsi!=null){
+    if(rsi>=70) heat="과열";
+    else if(rsi<=30) heat="과매도";
   }
 
-  // ---------- mini chart ----------
-  function drawMiniChart(seriesByTicker){
-    const w = miniChart.width = miniChart.clientWidth * devicePixelRatio;
-    const h = miniChart.height = miniChart.clientHeight * devicePixelRatio;
-    const ctx = miniChart.getContext("2d");
-    ctx.clearRect(0,0,w,h);
+  // 신호(단순)
+  let sig="유지";
+  if(trend==="상승" && heat!=="과열") sig="분할매수";
+  if(trend==="상승" && heat==="과열") sig="비중유지/익절";
+  if(trend==="하락" && heat==="과매도") sig="소액 DCA";
+  if(trend==="하락" && heat!=="과매도") sig="관망/축소";
 
-    // background grid
-    ctx.globalAlpha = 1;
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = "rgba(255,255,255,0.06)";
-    for(let i=1;i<5;i++){
-      const y = h*i/5;
-      ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke();
-    }
+  // 추천 비중(느슨하게)
+  let weight="중립";
+  if(sig==="분할매수") weight="↑";
+  if(sig.includes("축소")) weight="↓";
 
-    const keys = Object.keys(seriesByTicker);
-    if(keys.length===0) return;
+  return {trend, heat, sig, weight};
+}
 
-    // normalize each series to 0..1 by min/max, then average
-    const len = Math.min(...keys.map(k=>seriesByTicker[k].length));
-    const avg = [];
-    for(let i=0;i<len;i++){
-      let s=0;
-      for(const k of keys){
-        const arr = seriesByTicker[k].slice(-len);
-        const v = arr[i];
-        const min = Math.min(...arr);
-        const max = Math.max(...arr);
-        const nv = (v-min)/(max-min || 1);
-        s += nv;
-      }
-      avg.push(s/keys.length);
-    }
+/** 테이블 출력 */
+function setRow(ticker, info){
+  const tb = $("#sigTable tbody");
+  const tr = document.createElement("tr");
+  tr.className="data";
 
-    ctx.strokeStyle = "rgba(122,162,255,0.9)";
-    ctx.lineWidth = 2;
+  const td=(html,cls="")=>{
+    const c=document.createElement("td");
+    c.className=cls;
+    c.innerHTML=html;
+    return c;
+  };
+
+  tr.appendChild(td(`<b>${ticker}</b>`,"left"));
+  if(info.error){
+    tr.appendChild(td(`<span class="err">데이터 실패: ${info.error}</span>`,"left"));
+    tr.appendChild(td("-")); tr.appendChild(td("-")); tr.appendChild(td("-"));
+    tr.appendChild(td("-")); tr.appendChild(td("-")); tr.appendChild(td("-"));
+    tr.appendChild(td("-")); tr.appendChild(td("-")); tr.appendChild(td("-"));
+    tb.appendChild(tr);
+    return;
+  }
+
+  const {close, ma5, ma20, ma60, ma120, ma200, rsi, trend, sig, weight} = info;
+
+  tr.appendChild(td(fmt(close,2)));
+  tr.appendChild(td(fmt(ma5,2)));
+  tr.appendChild(td(fmt(ma20,2)));
+  tr.appendChild(td(fmt(ma60,2)));
+  tr.appendChild(td(fmt(ma120,2)));
+  tr.appendChild(td(fmt(ma200,2)));
+  tr.appendChild(td(fmt(rsi,1)));
+
+  const trendBadge =
+      trend==="상승" ? `<span class="ok">상승</span>` :
+      trend==="하락" ? `<span class="err">하락</span>` : "중립";
+  tr.appendChild(td(trendBadge));
+
+  tr.appendChild(td(sig));
+  tr.appendChild(td(weight));
+
+  tb.appendChild(tr);
+}
+
+/** 6개월 정규화 라인 차트 */
+function drawCombo(linesByTicker){
+  const canvas = $("#comboCanvas");
+  const ctx = canvas.getContext("2d");
+  const w=canvas.width, h=canvas.height;
+  ctx.clearRect(0,0,w,h);
+
+  // 그리드
+  ctx.globalAlpha=0.15;
+  for(let i=0;i<=4;i++){
+    const y=h*i/4;
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.strokeStyle="#fff"; ctx.stroke();
+  }
+  ctx.globalAlpha=1;
+
+  // 각 티커 라인
+  const colors=["#7aa2ff","#27d17f","#ffd166","#ff6b6b","#b37dff","#66e0ff"];
+  Object.keys(linesByTicker).forEach((t,idx)=>{
+    const arr=linesByTicker[t];
+    if(!arr || arr.length<2) return;
+    const min=Math.min(...arr), max=Math.max(...arr);
+    const norm=arr.map(v=>(v-min)/((max-min)||1));
+
     ctx.beginPath();
-    avg.forEach((v,i)=>{
-      const x = (i/(avg.length-1))*w;
-      const y = (1-v)*(h*0.9)+h*0.05;
+    norm.forEach((v,i)=>{
+      const x = (w-10)*i/(norm.length-1)+5;
+      const y = h - (h-10)*v -5;
       if(i===0) ctx.moveTo(x,y);
       else ctx.lineTo(x,y);
     });
+    ctx.lineWidth=2;
+    ctx.strokeStyle=colors[idx%colors.length];
     ctx.stroke();
+
+    // 라벨
+    ctx.fillStyle=colors[idx%colors.length];
+    ctx.font="bold 12px system-ui";
+    ctx.fillText(t, 8, 16+idx*14);
+  });
+}
+
+/** ===== 메인 업데이트 ===== */
+async function updateAll(){
+  $("#sigTable tbody").innerHTML="";
+  $("#trendPill").textContent="추세: 계산중";
+  $("#rsiPill").textContent="과열/과매도: 계산중";
+  $("#actionPill").textContent="오늘 액션: 계산중";
+  $("#trendPill").className="pill";
+  $("#rsiPill").className="pill";
+  $("#actionPill").className="pill";
+
+  const linesForCombo={};
+  let upCount=0, downCount=0, rsiHot=0, rsiCold=0;
+
+  for(const t of TICKERS){
+    try{
+      const ohlc = await fetchDailyOHLC(t);
+      const closes = ohlc.map(d=>d.close);
+      const close = closes[closes.length-1];
+
+      const ma5 = SMA(closes,5);
+      const ma20 = SMA(closes,20);
+      const ma60 = SMA(closes,60);
+      const ma120 = SMA(closes,120);
+      const ma200 = SMA(closes,200);
+      const rsi = RSI(closes,14);
+
+      const {trend, heat, sig, weight} = judgeSignal(close, ma20, ma60, rsi);
+
+      if(trend==="상승") upCount++;
+      if(trend==="하락") downCount++;
+      if(heat==="과열") rsiHot++;
+      if(heat==="과매도") rsiCold++;
+
+      // 6개월 close 라인
+      const last6m = closes.slice(-126); // 약 6개월(21*6)
+      linesForCombo[t]=last6m;
+
+      setRow(t,{close,ma5,ma20,ma60,ma120,ma200,rsi,trend,sig,weight});
+    }catch(e){
+      setRow(t,{error:String(e.message||e)});
+    }
   }
 
-  // ---------- main update ----------
-  async function updateAll(){
-    const token = apiKeyInput.value.trim();
-    if(!token){ toast("API 키 넣어"); return; }
+  drawCombo(linesForCombo);
 
-    $("#updateBtn").disabled = true;
-    tbody.innerHTML = "";
-    trendPill.className = "pill muted"; trendPill.textContent="추세: 계산중";
-    rsiPill.className = "pill muted"; rsiPill.textContent="과열/과매도: 계산중";
-    actionPill.className = "pill muted"; actionPill.textContent="오늘 액션: 계산중";
-
-    let upCount=0, downCount=0, rsiHot=0, rsiCold=0;
-    const seriesByTicker = {};
-
-    for(const sym of TICKERS){
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td class="left">${sym}</td>
-                      <td colspan="10" class="small">불러오는 중…</td>`;
-      tbody.appendChild(tr);
-
-      try{
-        const candles = await fetchCandles(sym, token);
-        const closes = candles.c;
-        const price = closes[closes.length-1];
-
-        const ma5 = sma(closes,5);
-        const ma20 = sma(closes,20);
-        const ma60 = sma(closes,60);
-        const ma120 = sma(closes,120);
-        const ma200 = sma(closes,200);
-        const rsi14 = calcRSI(closes,14);
-
-        const {trend, score} = trendSignal(price,ma5,ma20,ma60,ma120,ma200);
-        if(trend.includes("호조")) upCount++;
-        if(trend.includes("약세")) downCount++;
-
-        const rsiS = rsiSignal(rsi14);
-        if(rsiS.state==="과열") rsiHot++;
-        if(rsiS.state==="과매도") rsiCold++;
-
-        const action = actionFrom(trend, rsiS.state);
-        const weight = weightGuide(trend, rsiS.state);
-
-        // store for mini chart (6개월)
-        seriesByTicker[sym] = closes.slice(-120);
-
-        tr.innerHTML = `
-          <td class="left"><b>${sym}</b></td>
-          <td>${fmt(price,2)}</td>
-          <td>${fmt(ma5,2)}</td>
-          <td>${fmt(ma20,2)}</td>
-          <td>${fmt(ma60,2)}</td>
-          <td>${fmt(ma120,2)}</td>
-          <td>${fmt(ma200,2)}</td>
-          <td>${fmt(rsi14,1)}</td>
-          <td>${trend}</td>
-          <td>${action}</td>
-          <td>${weight}</td>
-        `;
-
-      }catch(e){
-        tr.innerHTML = `
-          <td class="left"><b>${sym}</b></td>
-          <td colspan="10" class="err">데이터 실패: ${String(e.message||e)}</td>
-        `;
-      }
-    }
-
-    // header summary
-    const trendSummary =
+  // 헤더 요약 신호
+  const trendSummary =
       upCount>=4 ? "호조/상승" :
       downCount>=4 ? "약세/하락" : "호조/전환";
-    const rsiSummary =
-      rsiHot>=3 ? "과열↑" :
-      rsiCold>=3 ? "과매도↓" : "중립";
 
-    const actionSummary =
+  const rsiSummary =
+      rsiHot>=3 ? "과열" :
+      rsiCold>=3 ? "과매도" : "중립";
+
+  const actionSummary =
       rsiHot>=3 ? "비중조절/익절 우선" :
       rsiCold>=3 ? "소액 DCA 가능" :
       trendSummary.includes("호조") ? "유지/소액 DCA" :
-      trendSummary.includes("약세") ? "유지/관망" : "유지/관망";
+      trendSummary.includes("약세") ? "관망/축소" :
+      "유지/관망";
 
-    trendPill.textContent = "추세: " + trendSummary;
-    rsiPill.textContent = "과열/과매도: " + rsiSummary;
-    actionPill.textContent = "오늘 액션: " + actionSummary;
+  $("#trendPill").textContent=`추세: ${trendSummary}`;
+  $("#rsiPill").textContent=`과열/과매도: ${rsiSummary}`;
+  $("#actionPill").textContent=`오늘 액션: ${actionSummary}`;
 
-    trendPill.className = "pill " + (trendSummary.includes("호조")?"good":trendSummary.includes("약세")?"bad":"warn");
-    rsiPill.className = "pill " + (rsiSummary.includes("과열")?"warn":rsiSummary.includes("과매도")?"good":"muted");
-    actionPill.className = "pill " + (actionSummary.includes("익절")?"warn":actionSummary.includes("DCA")?"good":"muted");
+  // pill color
+  $("#trendPill").className = "pill " + (trendSummary.includes("상승")?"good":trendSummary.includes("하락")?"bad":"warn");
+  $("#rsiPill").className = "pill " + (rsiSummary==="과열"?"bad":rsiSummary==="과매도"?"good":"warn");
+  $("#actionPill").className = "pill " + (actionSummary.includes("익절")||actionSummary.includes("축소")?"bad":actionSummary.includes("DCA")?"good":"warn");
 
-    drawMiniChart(seriesByTicker);
+  toast("완료");
+}
 
-    $("#updateBtn").disabled = false;
-    toast("완료");
-  }
-
-  $("#updateBtn").addEventListener("click", ()=>{
-    saveAll();
-    updateAll();
-  });
-
-  loadSaved();
+/** ===== 이벤트 ===== */
+$("#saveBtn").addEventListener("click", saveFx);
+$("#updateAllBtn").addEventListener("click", updateAll);
+loadFx();
 </script>
 </body>
-                                                          </html>
+  </html>
