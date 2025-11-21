@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>숑숑 레버 신호기 v1.1 (Finnhub FIX)</title>
+  <style>
+    :root{
+      --bg:#0b0d12; --card:#151924; --card2:#101421;
+      --txt:#e7e9ef; --muted:#9aa3b2; --line:#23283a;
+      --good:#27d17f; --bad:#ff6b6b; --warn:#ffd166; --accent:#7aa2ff;
+      --radius:16px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; background:var(--bg); color:var(--txt);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans KR",sans-serif;
+    }
+    header{
+      position:sticky; top:0; z-index:10;
+      background:linear-gradient(180deg,#0b0d12 0%,rgba(11,13,18,.95) 100%);
+      padding:14px 14px 8px; border-bottom:1px solid var(--line);
+    }
+    header h1{margin:0; font-size:18px; font-weight:800; letter-spacing:.2px}
+    header .sub{font-size:12px;color:var(--muted); margin-top:4px}
+    main{padding:14px; display:grid; gap:12px}
+    .grid2{display:grid; gap:12px; grid-template-columns:1fr}
+    @media(min-width:860px){ .grid2{grid-template-columns:1fr 1fr} }
+    .card{
+      background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+      padding:12px; box-shadow:0 8px 24px rgba(0,0,0,.25);
+    }
+    .card h2{margin:0 0 8px; font-size:15px}
+    .row{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+    input{
+      width:100%; padding:10px 10px; border-radius:12px; background:#0e1220;
+      border:1px solid var(--line); color:var(--txt); font-size:14px;
+      outline:none;
+    }
+    .btn{
+      padding:10px 12px; border-radius:12px; border:1px solid var(--line);
+      background:#11162a; color:var(--txt); font-weight:700; font-size:14px;
+      cursor:pointer; user-select:none;
+    }
+    .btn.primary{ background:var(--accent); color:#0b0d12; border-color:transparent; }
+    .pill{
+      padding:6px 10px; border-radius:999px; font-size:12px; font-weight:800;
+      border:1px solid var(--line); background:var(--card2);
+    }
+    .pill.good{color:var(--good); border-color:rgba(39,209,127,.35)}
+    .pill.bad{color:var(--bad); border-color:rgba(255,107,107,.35)}
+    .pill.warn{color:var(--warn); border-color:rgba(255,209,102,.35)}
+    .muted{color:var(--muted)}
+    table{width:100%; border-collapse:collapse; font-size:13px}
+    th,td{padding:8px 6px; border-bottom:1px solid var(--line); text-align:right; white-space:nowrap}
+    th:first-child,td:first-child{text-align:left}
+    .spark{
+      width:150px; height:70px; background:#0c1020; border:1px solid var(--line);
+      border-radius:10px;
+    }
+    .err{color:var(--bad); font-weight:700; font-size:12px}
+    .ok{color:var(--good); font-weight:700; font-size:12px}
+    .tiny{font-size:11px}
+    details summary{cursor:pointer; font-weight:700}
+    .actions{display:flex; gap:8px; flex-wrap:wrap}
+  </style>
+</head>
+<body>
+<header>
+  <h1>숑숑 레버 신호기 v1.1 <span class="tiny muted">· 일봉 기준 · Finnhub FIX</span></h1>
+  <div class="sub">신호는 100% 정답이 아님. “실수 줄이는 장치”로만 쓰자.</div>
+</header>
+
+<main>
+  <section class="grid2">
+    <div class="card">
+      <h2>1. API / 환경</h2>
+      <div class="row">
+        <div style="flex:1; min-width:220px">
+          <div class="tiny muted">Finnhub API Key</div>
+          <input id="apiKey" placeholder="여기에 Finnhub 키 입력" />
+        </div>
+        <div style="flex:1; min-width:180px">
+          <div class="tiny muted">달러/원 환율(수동)</div>
+          <input id="fx" placeholder="예: 1470" inputmode="decimal"/>
+        </div>
+      </div>
+      <div class="actions" style="margin-top:10px">
+        <button class="btn" id="saveBtn">저장</button>
+        <button class="btn primary" id="updateBtn">전체 업데이트</button>
+        <span id="status" class="tiny muted"></span>
+      </div>
+
+      <details style="margin-top:10px">
+        <summary>⚠️ 403/캔들실패가 뜨는 이유</summary>
+        <div class="tiny muted" style="margin-top:6px; line-height:1.5">
+          GitHub Pages/Drive/로컬 같은 “정적 웹”에서 Finnhub를 직접 호출하면
+          Finnhub 쪽이 CORS/권한 정책으로 403을 주는 경우가 있어.
+          이건 키가 살아있어도 생김. 캔들까지 보려면 프록시(넷리파이/워커)로 우회해야 함.
+        </div>
+      </details>
+    </div>
+
+    <div class="card">
+      <h2>2. 레버리지 규칙 (네 포폴 맞춤)</h2>
+      <div class="tiny muted" style="line-height:1.55">
+        - 레버는 비중 조절이 핵심이라 “3단 신호”로 단순화.<br/>
+        - 기본 목표: 레버 총합이 40% 넘으면 신규매수 최소화, 25% 밑이면 분할매수 허용.<br/>
+        - 개별 종목은 추세(MA) + 과열(RSI)로 판단.
+      </div>
+      <div class="row" style="margin-top:8px">
+        <span class="pill good" id="trendPill">추세: 계산중</span>
+        <span class="pill warn" id="rsiPill">과열/과매도: 계산중</span>
+        <span class="pill" id="actionPill">오늘 액션: 계산중</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>3. 레버 종목 신호</h2>
+    <div class="tiny muted">대상: TQQQ, SOXL, QLD, NVDL, METU, TSLL</div>
+    <div style="overflow:auto; margin-top:8px">
+      <table id="tbl">
+        <thead>
+          <tr>
+            <th>티커</th>
+            <th>현재가(USD)</th>
+            <th>MA5</th><th>MA20</th><th>MA60</th><th>MA120</th><th>MA200</th>
+            <th>RSI14</th>
+            <th>추세</th>
+            <th>신호</th>
+            <th>스파크</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="grid2">
+    <div class="card">
+      <h2>4. 체크리스트 (일봉 기준)</h2>
+      <ul class="tiny muted" style="line-height:1.6; margin:8px 0 0 18px">
+        <li>가격이 MA60 위/아래? → 큰 추세</li>
+        <li>MA5 vs MA20 위치? → 단기 힘</li>
+        <li>MA20 vs MA60 골든/데드? → 중기 전환</li>
+        <li>RSI 70↑ 과열, 30↓ 과매도(레버는 더 민감)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2>5. 로그(메모)</h2>
+      <textarea id="memo" rows="5" style="width:100%; padding:10px; border-radius:12px; background:#0e1220; border:1px solid var(--line); color:var(--txt); font-size:14px"
+        placeholder="오늘 느낀 점, 매수/매도 이유 적기"></textarea>
+      <div class="tiny muted" style="margin-top:6px">메모는 기기 로컬에 저장됨.</div>
+    </div>
+  </section>
+</main>
+
+<script>
+/** =========================
+ *  설정 / 저장
+ * ========================= */
+const TICKERS = ["TQQQ","SOXL","QLD","NVDL","METU","TSLL"];
+const LS = {
+  key: "syong_apiKey",
+  fx: "syong_fx",
+  memo:"syong_memo"
+};
+
+const $ = sel => document.querySelector(sel);
+const apiKeyEl = $("#apiKey");
+const fxEl = $("#fx");
+const memoEl = $("#memo");
+const statusEl = $("#status");
+memoEl.value = localStorage.getItem(LS.memo)||"";
+
+$("#saveBtn").onclick = () => {
+  localStorage.setItem(LS.key, apiKeyEl.value.trim());
+  localStorage.setItem(LS.fx, fxEl.value.trim());
+  localStorage.setItem(LS.memo, memoEl.value);
+  toast("저장 완료");
+};
+
+memoEl.addEventListener("input", () =>
+  localStorage.setItem(LS.memo, memoEl.value)
+);
+
+apiKeyEl.value = localStorage.getItem(LS.key)||"";
+fxEl.value = localStorage.getItem(LS.fx)||"1470";
+
+/** =========================
+ *  Finnhub fetch
+ * ========================= */
+const FINN_BASE = "https://finnhub.io/api/v1";
+
+async function finnhubGET(path, params){
+  const token = apiKeyEl.value.trim();
+  if(!token) throw new Error("NO_TOKEN");
+  const url = new URL(FINN_BASE + path);
+  Object.entries(params||{}).forEach(([k,v])=>url.searchParams.set(k,v));
+  url.searchParams.set("token", token);
+  const res = await fetch(url.toString(), {method:"GET"});
+  if(!res.ok){
+    const txt = await res.text().catch(()=> "");
+    throw new Error(`HTTP_${res.status}${txt?": "+txt.slice(0,80):""}`);
+  }
+  return res.json();
+}
+
+async function getQuote(symbol){
+  return finnhubGET("/quote", {symbol});
+}
+async function getCandle(symbol, from, to){
+  // 일봉 D, 200일쯤 뽑기
+  return finnhubGET("/stock/candle", {
+    symbol,
+    resolution:"D",
+    from: Math.floor(from/1000),
+    to: Math.floor(to/1000)
+  });
+}
+
+/** =========================
+ *  지표 계산
+ * ========================= */
+function sma(arr, n){
+  if(arr.length < n) return null;
+  let s=0;
+  for(let i=arr.length-n;i<arr.length;i++) s+=arr[i];
+  return s/n;
+}
+
+function rsi14(closes, period=14){
+  if(closes.length <= period) return null;
+  let gains=0, losses=0;
+  for(let i=1;i<=period;i++){
+    const diff = closes[i]-closes[i-1];
+    if(diff>=0) gains+=diff; else losses-=diff;
+  }
+  gains/=period; losses/=period;
+  let rs = losses===0 ? 100 : gains/losses;
+  let rsi = 100 - (100/(1+rs));
+  for(let i=period+1;i<closes.length;i++){
+    const diff = closes[i]-closes[i-1];
+    const gain = diff>0?diff:0;
+    const loss = diff<0?-diff:0;
+    gains = (gains*(period-1)+gain)/period;
+    losses = (losses*(period-1)+loss)/period;
+    rs = losses===0 ? 100 : gains/losses;
+    rsi = 100 - (100/(1+rs));
+  }
+  return rsi;
+}
+
+/** =========================
+ *  스파크(간단 캔들/라인)
+ * ========================= */
+function drawSpark(canvas, closes){
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0,0,w,h);
+  if(!closes || closes.length<2) return;
+  const min = Math.min(...closes);
+  const max = Math.max(...closes);
+  const pad = 4;
+  const scaleX = (w-pad*2)/(closes.length-1);
+  const scaleY = (h-pad*2)/((max-min)||1);
+
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  closes.forEach((c,i)=>{
+    const x = pad+i*scaleX;
+    const y = h-pad-(c-min)*scaleY;
+    if(i===0) ctx.moveTo(x,y);
+    else ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle = "#7aa2ff";
+  ctx.stroke();
+}
+
+/** =========================
+ *  신호 로직
+ * ========================= */
+function trendSignal(closes){
+  const ma20=sma(closes,20), ma60=sma(closes,60);
+  if(ma20==null||ma60==null) return "중립";
+  if(ma20>ma60) return "상승";
+  if(ma20<ma60) return "하락";
+  return "중립";
+}
+function actionFrom(trend, rsi){
+  if(rsi!=null && rsi>=70) return "과열: 분할익절/현금";
+  if(rsi!=null && rsi<=30) return "과매도: 소액DCA";
+  if(trend==="상승") return "유지/소액DCA";
+  if(trend==="하락") return "비중축소/관망";
+  return "유지/관망";
+}
+
+/** =========================
+ *  렌더
+ * ========================= */
+function toast(msg){
+  statusEl.textContent = msg;
+  setTimeout(()=>statusEl.textContent="", 1800);
+}
+
+function mkCell(text, cls){
+  const td=document.createElement("td");
+  td.textContent=text;
+  if(cls) td.className=cls;
+  return td;
+}
+
+$("#updateBtn").onclick = updateAll;
+
+async function updateAll(){
+  const token=apiKeyEl.value.trim();
+  if(!token){ toast("API 키 넣어"); return; }
+
+  toast("업데이트 중...");
+  const tbody=$("#tbl tbody");
+  tbody.innerHTML="";
+
+  let upCount=0, downCount=0, rsiHot=0, rsiCold=0;
+
+  for(const sym of TICKERS){
+    const tr=document.createElement("tr");
+    tr.appendChild(mkCell(sym));
+
+    // 기본 자리 채우기
+    const priceTd = mkCell("…");
+    tr.appendChild(priceTd);
+
+    const maTds = [5,20,60,120,200].map(()=>mkCell("—"));
+    maTds.forEach(td=>tr.appendChild(td));
+
+    const rsiTd = mkCell("—");
+    tr.appendChild(rsiTd);
+
+    const trendTd = mkCell("…");
+    tr.appendChild(trendTd);
+
+    const sigTd = mkCell("…");
+    tr.appendChild(sigTd);
+
+    const sparkTd = document.createElement("td");
+    const canvas=document.createElement("canvas");
+    canvas.className="spark";
+    canvas.width=150; canvas.height=70;
+    sparkTd.appendChild(canvas);
+    tr.appendChild(sparkTd);
+
+    tbody.appendChild(tr);
+
+    try{
+      const q = await getQuote(sym);
+      const now = q.c ?? q.pc;
+      priceTd.textContent = now ? now.toFixed(2) : "N/A";
+
+      const to=Date.now();
+      const from=to-1000*60*60*24*260; // 약 260일
+
+      const c = await getCandle(sym, from, to);
+      if(c.s!=="ok") throw new Error("CANDLE_EMPTY");
+
+      const closes=c.c.filter(x=>typeof x==="number");
+      // 최신값 now가 있으면 마지막 close로 보정
+      if(now && closes.length) closes[closes.length-1]=now;
+
+      const ma5=sma(closes,5), ma20=sma(closes,20), ma60=sma(closes,60),
+            ma120=sma(closes,120), ma200=sma(closes,200);
+
+      [ma5,ma20,ma60,ma120,ma200].forEach((v,i)=>{
+        maTds[i].textContent = v? v.toFixed(2):"—";
+      });
+
+      const rsi=rsi14(closes);
+      rsiTd.textContent=rsi? rsi.toFixed(2):"—";
+
+      const trend=trendSignal(closes);
+      trendTd.textContent=trend;
+      if(trend==="상승"){ trendTd.style.color="var(--good)"; upCount++; }
+      if(trend==="하락"){ trendTd.style.color="var(--bad)"; downCount++; }
+
+      if(rsi!=null){
+        if(rsi>=70) rsiHot++;
+        if(rsi<=30) rsiCold++;
+      }
+
+      const act=actionFrom(trend, rsi);
+      sigTd.textContent=act;
+      if(act.includes("과열")) sigTd.style.color="var(--warn)";
+      if(act.includes("과매도")) sigTd.style.color="var(--good)";
+
+      drawSpark(canvas, closes.slice(-90));
+    }catch(err){
+      const msg = (""+err.message)||"ERR";
+      priceTd.innerHTML = `<span class="err">데이터 실패: ${msg}</span>`;
+      trendTd.textContent="—";
+      sigTd.textContent="—";
+    }
+  }
+
+  // 헤더 요약 신호
+  const trendSummary =
+    upCount>=4 ? "호조/상승" :
+    downCount>=4 ? "약세/하락" : "혼조/전환";
+  $("#trendPill").textContent = "추세: " + trendSummary;
+
+  const rsiSummary =
+    rsiHot>=3 ? "과열↑" :
+    rsiCold>=3 ? "과매도↓" : "중립";
+  $("#rsiPill").textContent = "과열/과매도: " + rsiSummary;
+
+  const actionSummary =
+    rsiHot>=3 ? "비중조절/익절 우선" :
+    rsiCold>=3 ? "소액 DCA 가능" :
+    trendSummary.includes("호조") ? "유지/소액 DCA" :
+    trendSummary.includes("약세") ? "비중 축소/관망" :
+    "유지/관망";
+
+  $("#actionPill").textContent = "오늘 액션: " + actionSummary;
+
+  toast("완료");
+}
+</script>
+</body>
+</html>
